@@ -35,12 +35,12 @@ async def _get_client() -> httpx.AsyncClient:
     return _client
 
 
-# Lucene special chars to escape (keep ? as wildcard for our replacement chars)
-_LUCENE_ESCAPE = re.compile(r'([+\-&|!(){}\[\]^"~*:\\\/])')
+# Lucene special chars to escape (keep _ as wildcard for our replacement chars)
+_LUCENE_ESCAPE = re.compile(r'([+\-&|!(){}\[\]^"~*?:\\\/])')
 
 
 def _build_query(name: str) -> str:
-    """Replace � with Lucene single-char wildcard `?` and escape other special chars.
+    """Replace � with Lucene single-char wildcard `_` and escape other special chars.
 
     Words that contained a replacement character get a trailing ``~`` so
     MusicBrainz applies fuzzy matching to them.
@@ -49,7 +49,7 @@ def _build_query(name: str) -> str:
     out: list[str] = []
     for word in words:
         has_replacement = REPLACEMENT_CHAR in word
-        word = word.replace(REPLACEMENT_CHAR, "?")
+        word = word.replace(REPLACEMENT_CHAR, "_")
         word = _LUCENE_ESCAPE.sub(r"\\\1", word)
         if has_replacement:
             word += "~"
