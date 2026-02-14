@@ -121,7 +121,7 @@ async def lookup(name: str, type_: str = "auto") -> Optional[dict]:
     """Search MusicBrainz for the corrected name. Returns dict or None."""
     if type_ == "artist":
         return await search_artist(name)
-    if type_ == "song":
+    if type_ in ("song", "recording"):
         return await search_recording(name)
     # auto: try artist first, then recording
     result = await search_artist(name)
