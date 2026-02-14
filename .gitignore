@@ -11,6 +11,9 @@ build/
 # SQLite cache
 *.db
 
+# Config files
+config.py
+
 # IDE
 .vscode/
 .idea/

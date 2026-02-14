@@ -3,7 +3,7 @@ import os
 
 OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_MODEL: str = os.environ.get("SONGFIX_OPENAI_MODEL", "gpt-4o-mini")
-HOST: str = os.environ.get("SONGFIX_HOST", "127.0.0.1")
+HOST: str = os.environ.get("SONGFIX_HOST", "0.0.0.0")
 PORT: int = int(os.environ.get("SONGFIX_PORT", "8042"))
 DB_PATH: str = os.environ.get("SONGFIX_DB", "songfix_cache.db")
 MB_USER_AGENT: str = "songfix/0.1.0 (https://github.com/songfix)"
