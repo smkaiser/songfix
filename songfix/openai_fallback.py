@@ -6,9 +6,9 @@ from .config import OPENAI_API_KEY, OPENAI_MODEL, REPLACEMENT_CHAR
 
 _SYSTEM = (
     "You are a music expert. The user will give you a song title or artist name "
-    "that has corrupted characters (the Unicode replacement character \ufffd). "
+    "that has one or more corrupted characters (the Unicode replacement character \ufffd). "
     "Reply with ONLY the corrected name — no explanation, no quotes, no punctuation "
-    "other than what belongs in the name."
+    "other than what belongs in the name. The corrupted character should be replaced by a SINGLE accented or sspecial character that fits the context."
 )
 
 
