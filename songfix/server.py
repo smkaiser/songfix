@@ -1,3 +1,4 @@
+import argparse
 import logging
 from typing import Optional
 
@@ -8,6 +9,9 @@ from pydantic import BaseModel
 
 from . import cache, musicbrainz, openai_fallback
 from .config import HOST, PORT
+
+# Which backends to use: "all", "openai", or "musicbrainz"
+BACKEND: str = "all"
 
 app = FastAPI(title="songfix", version="0.1.0", description="Correct corrupted song/artist names")
 app.add_middleware(
@@ -40,28 +44,30 @@ async def _resolve(name: str, type_: str) -> FixResponse:
         return FixResponse(input=name, **cached)
 
     # 2. MusicBrainz
-    try:
-        mb = await musicbrainz.lookup(name, type_)
-    except Exception:
-        log.exception("MusicBrainz error for %r", name)
-        mb = None
+    if BACKEND in ("all", "musicbrainz"):
+        try:
+            mb = await musicbrainz.lookup(name, type_)
+        except Exception:
+            log.exception("MusicBrainz error for %r", name)
+            mb = None
 
-    if mb:
-        log.info("musicbrainz match for %r -> %r", name, mb["corrected"])
-        cache.set_cached(name, type_, **mb)
-        return FixResponse(input=name, **mb)
+        if mb:
+            log.info("musicbrainz match for %r -> %r", name, mb["corrected"])
+            cache.set_cached(name, type_, **mb)
+            return FixResponse(input=name, **mb)
 
     # 3. OpenAI fallback
-    try:
-        ai = await openai_fallback.correct(name, type_)
-    except Exception:
-        log.exception("OpenAI error for %r", name)
-        ai = None
+    if BACKEND in ("all", "openai"):
+        try:
+            ai = await openai_fallback.correct(name, type_)
+        except Exception:
+            log.exception("OpenAI error for %r", name)
+            ai = None
 
-    if ai:
-        log.info("openai match for %r -> %r", name, ai["corrected"])
-        cache.set_cached(name, type_, **ai)
-        return FixResponse(input=name, **ai)
+        if ai:
+            log.info("openai match for %r -> %r", name, ai["corrected"])
+            cache.set_cached(name, type_, **ai)
+            return FixResponse(input=name, **ai)
 
     # 4. Nothing worked — return input unchanged
     return FixResponse(input=name, corrected=name, source="none", confidence=0.0)
@@ -86,7 +92,18 @@ async def fix_post(req: FixRequest):
 
 
 def main():
+    global BACKEND
+    parser = argparse.ArgumentParser(description="songfix server")
+    parser.add_argument(
+        "--backend",
+        choices=["all", "openai", "musicbrainz"],
+        default="all",
+        help="Which lookup backend(s) to use (default: all)",
+    )
+    args = parser.parse_args()
+    BACKEND = args.backend
     logging.basicConfig(level=logging.INFO)
+    log.info("Starting songfix with backend=%s", BACKEND)
     uvicorn.run(app, host=HOST, port=PORT)
 
 
