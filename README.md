@@ -21,6 +21,10 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+Then:
+- copy songfix/config_default.py to songfix/config.py. 
+- set the environment variables referenced in config.py
+
 ## Usage
 
 Start the server:
