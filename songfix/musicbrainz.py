@@ -105,10 +105,13 @@ async def search_artist(name: str) -> Optional[dict]:
     return None
 
 
-async def search_recording(name: str) -> Optional[dict]:
+async def search_recording(name: str, artist: str | None = None) -> Optional[dict]:
     query = _build_query(name)
     if not query.strip():
         return None
+    if artist:
+        escaped_artist = _LUCENE_ESCAPE.sub(r"\\\1", artist)
+        query = f"{query} AND artistname:{escaped_artist}"
     results = await _search("recording", query)
     for item in results:
         score = item.get("score", 0) / 100.0
@@ -118,7 +121,7 @@ async def search_recording(name: str) -> Optional[dict]:
 
 
 async def lookup(name: str, type_: str = "auto") -> Optional[dict]:
-    """Search MusicBrainz for the corrected name. Returns dict or None."""
+    """Search MusicBrainz for the corrected name (legacy single-field). Returns dict or None."""
     if type_ == "artist":
         return await search_artist(name)
     if type_ in ("song", "recording"):
@@ -128,3 +131,25 @@ async def lookup(name: str, type_: str = "auto") -> Optional[dict]:
     if result:
         return result
     return await search_recording(name)
+
+
+async def lookup_pair(
+    artist: str | None = None,
+    song: str | None = None,
+) -> dict:
+    """Search MusicBrainz for artist and/or song. Returns per-field results dict."""
+    results: dict = {}
+
+    if artist and REPLACEMENT_CHAR in artist:
+        mb_artist = await search_artist(artist)
+        if mb_artist:
+            results["artist"] = mb_artist
+
+    if song and REPLACEMENT_CHAR in song:
+        # Use artist (original or MB-corrected) as context for recording search
+        artist_context = results.get("artist", {}).get("corrected", artist)
+        mb_song = await search_recording(song, artist=artist_context)
+        if mb_song:
+            results["song"] = mb_song
+
+    return results
