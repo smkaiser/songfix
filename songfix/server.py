@@ -198,7 +198,11 @@ async def fix_post(req: FixRequest):
         elif (req.type or "auto") in ("song", "recording"):
             return FixResponse(song=FieldResult(**legacy.model_dump()))
         else:
-            return FixResponse(song=FieldResult(**legacy.model_dump()))
+            # Auto: try as artist first, fall back to song
+            resp = await _resolve_pair(artist=req.name, song=None)
+            if resp.artist and resp.artist.source != "none":
+                return resp
+            return await _resolve_pair(artist=None, song=req.name)
 
     return await _resolve_pair(req.artist, req.song)
 
